@@ -70,6 +70,14 @@ class SettingsPage(QWidget):
     def _response_card(self) -> Card:
         card = Card("Automatic Response", "shield")
         card.add(self._toggle_row(
+            "🔒 Lockdown new keyboards",
+            "Strongest defense: instantly FREEZE all keyboard input when an "
+            "untrusted keyboard appears, until you approve it with the mouse. "
+            "Stops a Rubber Ducky before it can type.",
+            "lockdown_new_keyboards", self.settings.lockdown_new_keyboards,
+            danger=True))
+        card.add(_divider())
+        card.add(self._toggle_row(
             "Alert me", "In-app banner + system notification.",
             "notify", self.settings.notify))
         card.add(_divider())

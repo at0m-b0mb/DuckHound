@@ -3,6 +3,16 @@
 All notable changes to DuckHound are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.0.2] — 2026-06-25
+
+### Added
+- **🔒 Lockdown mode** (on by default) — when an untrusted keyboard is connected, or a
+  keystroke-injection burst is detected, DuckHound freezes *all* keyboard input and shows
+  a mouse-only modal to Approve (trust) or Block. Approving trusts the device and
+  unfreezes; blocking keeps it frozen until the device is unplugged. A 30-second failsafe
+  and auto-release-on-unplug guarantee you can never be locked out by a bug. Only devices
+  that appear *after* monitoring is armed trigger it, so your existing keyboard is safe.
+
 ## [1.0.1] — 2026-06-25
 
 ### Fixed
@@ -43,5 +53,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - DuckHound measures keystroke **timing only**, never key content, and performs no
   network access or telemetry.
 
+[1.0.2]: https://github.com/at0m-b0mb/DuckHound/releases/tag/v1.0.2
 [1.0.1]: https://github.com/at0m-b0mb/DuckHound/releases/tag/v1.0.1
 [1.0.0]: https://github.com/at0m-b0mb/DuckHound/releases/tag/v1.0.0

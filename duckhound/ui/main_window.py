@@ -9,6 +9,7 @@ from .. import APP_NAME, TAGLINE
 from ..config import Settings
 from ..core.engine import DetectionEngine
 from . import icons
+from .components.lockdown_dialog import LockdownDialog
 from .components.sidebar import Sidebar
 from .components.toast import Toast
 from .pages.dashboard import DashboardPage
@@ -50,6 +51,11 @@ class MainWindow(QWidget):
         lay.addWidget(self.stack, 1)
 
         self.toast = Toast(self)
+        self.lockdown_dialog = LockdownDialog(self)
+        self.lockdown_dialog.approved.connect(self.engine.approve_lockdown)
+        self.lockdown_dialog.blocked.connect(self._on_lockdown_block)
+        self.lockdown_dialog.force_unlock.connect(self.engine.release_lockdown)
+        self._lockdown_device = None
 
         self._wire()
         self._prime()
@@ -68,12 +74,29 @@ class MainWindow(QWidget):
         e.devices_changed.connect(self.devices.set_devices)
         e.threat_detected.connect(self._on_threat)
         e.permission_status.connect(self.dashboard.set_permission)
+        e.lockdown_engaged.connect(self._on_lockdown_engaged)
+        e.lockdown_released.connect(self._on_lockdown_released)
 
         self.dashboard.toggle_monitor.connect(e.toggle)
         self.dashboard.grant_access_requested.connect(self._on_grant_access)
         self.devices.trust_requested.connect(e.trust_device)
         self.devices.block_requested.connect(e.block_device)
         self.settings_page.settings_changed.connect(e.apply_settings)
+
+    def _on_lockdown_engaged(self, device, reason: str) -> None:
+        self._lockdown_device = device
+        name = device.name if device else "an unknown input device"
+        self.lockdown_dialog.prompt(name, reason)
+
+    def _on_lockdown_block(self) -> None:
+        if self._lockdown_device is not None:
+            self.engine.block_device(self._lockdown_device.key)
+        name = self._lockdown_device.name if self._lockdown_device else "the device"
+        self.lockdown_dialog.show_blocked(name)  # keep frozen until unplugged
+
+    def _on_lockdown_released(self) -> None:
+        self.lockdown_dialog.hide()
+        self._lockdown_device = None
 
     def _on_grant_access(self) -> None:
         ok = self.engine.request_access()

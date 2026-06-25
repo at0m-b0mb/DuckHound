@@ -32,6 +32,8 @@ class DetectionEngine(QObject):
     stats_changed = Signal(dict)
     status_text = Signal(str)
     permission_status = Signal(bool, str)    # (hook_can_see_keys, detail)
+    lockdown_engaged = Signal(object, str)   # (Device|None, reason)
+    lockdown_released = Signal()
 
     def __init__(self, settings: Settings, demo: bool = False) -> None:
         super().__init__()
@@ -71,6 +73,15 @@ class DetectionEngine(QObject):
         self._hook_watchdog.setInterval(8000)
         self._hook_watchdog.timeout.connect(self._check_hook_alive)
 
+        # Lockdown state + a failsafe so a bug can never trap the keyboard.
+        self._lockdown_active = False
+        self._lockdown_key = ""
+        self._baseline_done = False  # don't lock down devices present at arm time
+        self._failsafe = QTimer(self)
+        self._failsafe.setSingleShot(True)
+        self._failsafe.setInterval(30000)
+        self._failsafe.timeout.connect(self.release_lockdown)
+
         # Demo machinery.
         self._demo_timer = QTimer(self)
         self._demo_timer.timeout.connect(self._maybe_demo_attack)
@@ -96,7 +107,8 @@ class DetectionEngine(QObject):
             self._demo_timer.start(random.randint(6000, 10000))
             self.status_text.emit("Simulation armed — watching for injected keystrokes")
         else:
-            self._poll_usb()
+            self._baseline_done = False
+            self._poll_usb()  # establish the baseline without locking down
             self._usb_timer.start()
             self._keys_since_start = 0
             ok, detail = permissions.keystroke_access()
@@ -120,6 +132,7 @@ class DetectionEngine(QObject):
         self._burst_timer.stop()
         self._decay_timer.stop()
         self._hook_watchdog.stop()
+        self.release_lockdown()
         self._stop_keyboard_hook()
         self.activity.emit(0.0, 0.0)
         self.monitoring_changed.emit(False)
@@ -222,12 +235,18 @@ class DetectionEngine(QObject):
                 self.devices[key] = dev
                 self.analyzer.reset()  # a fresh keyboard restarts the burst clock
                 self.device_announced.emit(dev, True)
+                if (self._baseline_done and self.settings.lockdown_new_keyboards
+                        and dev.is_input and dev.state != DeviceState.TRUSTED):
+                    self._engage_lockdown(dev, f"New keyboard connected: {dev.name}")
             else:
                 self.devices[key].last_seen = time.time()
-        # Departures.
+        # Departures — releasing lockdown if the offending device is unplugged.
         for key in list(self.devices):
             if key not in current and not self.devices[key].is_internal:
                 self.devices.pop(key, None)
+                if self._lockdown_active and key == self._lockdown_key:
+                    self.release_lockdown()
+        self._baseline_done = True  # subsequent arrivals are genuinely new
         self.devices_changed.emit(self._device_list())
         self._emit_stats()
 
@@ -268,9 +287,42 @@ class DetectionEngine(QObject):
         self.events.insert(0, ev)
         self._level = 100.0
         self.analyzer.reset()
+        if (not self.demo and self.settings.lockdown_new_keyboards
+                and not self._lockdown_active):
+            self._engage_lockdown(device, "Keystroke injection in progress")
         self.threat_detected.emit(ev)
         self.devices_changed.emit(self._device_list())
         self._emit_stats()
+
+    # ------------------------------------------------------------------ #
+    # Lockdown
+    # ------------------------------------------------------------------ #
+    def _engage_lockdown(self, device: Device | None, reason: str) -> None:
+        if self.demo or self._lockdown_active:
+            return
+        engaged = self.responder.engage_lockdown()
+        self._lockdown_active = True
+        self._lockdown_key = device.key if device else ""
+        self._failsafe.start()
+        suffix = "" if engaged else " (grant Input Monitoring to enforce)"
+        self.status_text.emit(f"🔒 LOCKDOWN — {reason}{suffix}")
+        self.lockdown_engaged.emit(device, reason)
+
+    def approve_lockdown(self) -> None:
+        """User vouched for the device: trust it and unfreeze the keyboard."""
+        if self._lockdown_key:
+            self.trust_device(self._lockdown_key)
+        self.release_lockdown()
+
+    def release_lockdown(self) -> None:
+        if not self._lockdown_active:
+            return
+        self.responder.release_lockdown()
+        self._lockdown_active = False
+        self._lockdown_key = ""
+        self._failsafe.stop()
+        self.status_text.emit("Lockdown lifted — keyboard restored")
+        self.lockdown_released.emit()
 
     def trust_device(self, key: str) -> None:
         dev = self.devices.get(key)

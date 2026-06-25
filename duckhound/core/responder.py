@@ -15,6 +15,7 @@ from ..config import Settings
 class Responder:
     def __init__(self, settings: Settings) -> None:
         self.settings = settings
+        self._lock_listener = None  # persistent lockdown suppressor
 
     def respond(self, title: str, detail: str) -> list[str]:
         """Run every enabled response and return human-readable labels."""
@@ -116,6 +117,34 @@ class Responder:
                 pass
         threading.Timer(max(0.3, duration_s), _release).start()
         return True
+
+    # -- Lockdown: persistent global keyboard freeze --------------------- #
+    def engage_lockdown(self) -> bool:
+        """Freeze ALL keyboard input until released. Needs the same OS
+        permission as the detector; a real user navigates with the mouse."""
+        if self._lock_listener is not None:
+            return True
+        try:
+            from pynput import keyboard
+        except Exception:
+            return False
+        try:
+            self._lock_listener = keyboard.Listener(
+                on_press=lambda _k: None, on_release=lambda _k: None,
+                suppress=True)
+            self._lock_listener.start()
+            return True
+        except Exception:
+            self._lock_listener = None
+            return False
+
+    def release_lockdown(self) -> None:
+        if self._lock_listener is not None:
+            try:
+                self._lock_listener.stop()
+            except Exception:
+                pass
+            self._lock_listener = None
 
     def deauthorize_hint(self) -> bool:
         """Marker for the most aggressive response.

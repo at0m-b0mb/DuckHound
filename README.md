@@ -35,6 +35,9 @@ that signature, and slams the door shut.
 
 ## ✨ Highlights
 
+- 🔒 **Lockdown mode** — the instant an untrusted keyboard appears (or an injection burst
+  is seen), DuckHound **freezes all keyboard input** and demands you approve it *with the
+  mouse*. A Rubber Ducky can't type its way out.
 - 🎯 **Keystroke-injection detection** — a real-time timing engine that scores every
   burst of input on *speed* and *regularity*. Flags machine typing; ignores even the
   fastest human.
@@ -68,6 +71,9 @@ that signature, and slams the door shut.
 
 ### Settings — tune sensitivity & automatic responses
 <img src="assets/screenshots/settings.png" alt="DuckHound settings" width="90%"/>
+
+### 🔒 Lockdown — keyboard frozen, approve with the mouse or it stays locked
+<img src="assets/screenshots/lockdown.png" alt="DuckHound lockdown mode" width="90%"/>
 
 </div>
 
@@ -140,8 +146,11 @@ keystrokes by design. Use plain `python run.py` to watch real input.
 | **Linux** | Use an **X11** session (Wayland restricts global key capture), or run with access to `/dev/input`. |
 | **Windows** | Works out of the box; run as Administrator only for device de-authorization. |
 
-**3. Make it actually _stop_ the attack.** By default DuckHound only **alerts**. To
-neutralize an attack, open **Settings → Automatic Response** and enable:
+**3. Make it actually _stop_ the attack.** Open **Settings → Automatic Response**:
+- **🔒 Lockdown new keyboards** *(on by default, strongest)* — the moment an untrusted
+  keyboard appears, **all** keyboard input is frozen and a mouse-only dialog asks you to
+  Approve or Block. Nothing types until you decide. (Only devices plugged in *after* you
+  arm monitoring trigger this — your existing keyboard is fine.)
 - **Lock the screen** — on macOS this uses the screensaver, so also turn on
   *System Settings → Lock Screen → "Require password immediately"*.
 - **Block injected keystrokes** — swallows input for ~2s to kill the rest of the payload.

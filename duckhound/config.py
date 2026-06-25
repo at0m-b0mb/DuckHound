@@ -42,6 +42,8 @@ class Settings:
     lock_screen: bool = False           # lock the workstation immediately
     block_keystrokes: bool = False      # try to swallow injected keystrokes
     deauthorize_device: bool = False    # Linux/Windows: cut power/authorization
+    lockdown_new_keyboards: bool = True  # freeze ALL input when an untrusted
+    #                                      keyboard appears, until you approve it
 
     # --- General -----------------------------------------------------------
     autostart_monitor: bool = True      # begin monitoring on launch
