@@ -3,6 +3,25 @@
 All notable changes to DuckHound are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.0.3] — 2026-06-25
+
+### Added / Changed
+- **macOS detection that actually works on Apple Silicon.** The USB backend now uses
+  `ioreg` over `IOHIDInterface` (fast, no permission, classifies keyboards by HID usage)
+  instead of `system_profiler SPUSBDataType`, which returned nothing on Apple Silicon.
+  A Rubber Ducky / Flipper is now spotted the instant it enumerates.
+- **Neutralize without keystroke permissions.** Lockdown can now **lock the screen** when
+  an untrusted keyboard appears (new `lock_on_lockdown`, on by default). Screen-locking
+  needs no Input Monitoring / Accessibility grant, and the injected keystrokes land
+  harmlessly on the lock screen. (Enable *System Settings → Lock Screen → "Require
+  password immediately"* so the lock demands a password.)
+- **Faster polling** (~0.9s on macOS/Linux) so a rogue device is caught within ~1s.
+- `python run.py --grant` (trigger the macOS permission prompts) and `--doctor` (self-test).
+
+### Note
+- This release un-trusts all devices on first run if you had previously trusted a
+  BadUSB-capable gadget by mistake — re-approve real keyboards via the Lockdown dialog.
+
 ## [1.0.2] — 2026-06-25
 
 ### Added
@@ -53,6 +72,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - DuckHound measures keystroke **timing only**, never key content, and performs no
   network access or telemetry.
 
+[1.0.3]: https://github.com/at0m-b0mb/DuckHound/releases/tag/v1.0.3
 [1.0.2]: https://github.com/at0m-b0mb/DuckHound/releases/tag/v1.0.2
 [1.0.1]: https://github.com/at0m-b0mb/DuckHound/releases/tag/v1.0.1
 [1.0.0]: https://github.com/at0m-b0mb/DuckHound/releases/tag/v1.0.0

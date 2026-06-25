@@ -125,7 +125,21 @@ few seconds so you can watch the radar light up, the meter spike, and the respon
 
 ## 🩺 Troubleshooting — "it didn't detect my Rubber Ducky!"
 
-> 99% of the time this is an **OS permission** issue. The global keyboard hook needs
+> ### ⚡ Fastest way to actually neutralize a Ducky (works with **no permissions**)
+> DuckHound spots a new keyboard via `ioreg` (no permission needed) and **locks your
+> screen**, so the injected payload types harmlessly into the lock screen. To use it:
+> 1. **Settings → Automatic Response →** keep **Lockdown new keyboards** and **Lock
+>    screen on lockdown** ON (both default).
+> 2. Turn on **System Settings → Lock Screen → "Require password… immediately"** so the
+>    lock demands your password.
+> 3. Arm monitoring, then plug in the Ducky — your screen locks within ~1 second.
+>
+> For DuckHound to also *detect by typing speed* and *freeze* the keyboard, grant the
+> permissions below. But the lock-screen defense above needs none of them.
+
+---
+
+> Detection-by-typing is **99% an OS permission** issue. The global keyboard hook needs
 > permission to see keystrokes — without it, the OS silently delivers **zero** events
 > and DuckHound is flying blind. **Run the self-test first:**
 >

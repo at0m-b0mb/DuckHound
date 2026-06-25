@@ -78,6 +78,14 @@ class SettingsPage(QWidget):
             danger=True))
         card.add(_divider())
         card.add(self._toggle_row(
+            "Lock screen on lockdown",
+            "ON: lock the screen (works with NO special permission — the attack "
+            "types into the lock screen). OFF: freeze the keyboard instead "
+            "(needs Accessibility). For the lock to require a password, also turn "
+            "on System Settings → Lock Screen → 'Require password immediately'.",
+            "lock_on_lockdown", self.settings.lock_on_lockdown))
+        card.add(_divider())
+        card.add(self._toggle_row(
             "Alert me", "In-app banner + system notification.",
             "notify", self.settings.notify))
         card.add(_divider())

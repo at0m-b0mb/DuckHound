@@ -11,6 +11,7 @@ realistic simulated attack feed — no devices or OS permissions required.
 from __future__ import annotations
 
 import random
+import sys
 import time
 
 from PySide6.QtCore import QObject, QTimer, Signal
@@ -58,7 +59,9 @@ class DetectionEngine(QObject):
 
         # Timers (parented to self -> live on the GUI thread).
         self._usb_timer = QTimer(self)
-        self._usb_timer.setInterval(2500)
+        # ioreg (macOS) and sysfs (Linux) are cheap, so poll fast to catch a
+        # rogue keyboard within ~1s; Windows PnP queries are heavier.
+        self._usb_timer.setInterval(2500 if sys.platform.startswith("win") else 900)
         self._usb_timer.timeout.connect(self._poll_usb)
 
         self._decay_timer = QTimer(self)
@@ -300,12 +303,20 @@ class DetectionEngine(QObject):
     def _engage_lockdown(self, device: Device | None, reason: str) -> None:
         if self.demo or self._lockdown_active:
             return
-        engaged = self.responder.engage_lockdown()
         self._lockdown_active = True
         self._lockdown_key = device.key if device else ""
         self._failsafe.start()
-        suffix = "" if engaged else " (grant Input Monitoring to enforce)"
-        self.status_text.emit(f"🔒 LOCKDOWN — {reason}{suffix}")
+        if self.settings.lock_on_lockdown:
+            # Lock the screen — needs no special permission, and the injected
+            # keystrokes land harmlessly on the lock screen. Don't also freeze:
+            # the user needs the keyboard to type their password back in.
+            locked = self.responder.lock_screen()
+            note = "screen locked" if locked else "lock failed — see Settings"
+        else:
+            # Freeze all keyboard input (needs Accessibility).
+            frozen = self.responder.engage_lockdown()
+            note = "keyboard frozen" if frozen else "grant Accessibility to freeze"
+        self.status_text.emit(f"🔒 LOCKDOWN — {reason} ({note})")
         self.lockdown_engaged.emit(device, reason)
 
     def approve_lockdown(self) -> None:
