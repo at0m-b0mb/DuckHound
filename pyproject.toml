@@ -20,6 +20,7 @@ dependencies = [
 [project.optional-dependencies]
 linux = ["pyudev>=0.24"]
 windows = ["wmi>=1.5", "pywin32>=305"]
+dev = ["pytest>=7"]
 
 [project.scripts]
 duckhound = "duckhound.cli:main"
@@ -29,3 +30,6 @@ duckhound-gui = "duckhound.app:main"
 
 [tool.setuptools.packages.find]
 include = ["duckhound*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -6,6 +6,7 @@
 
 **Detect and stop BadUSB / Rubber Ducky keystroke-injection attacks — beautifully, on every OS.**
 
+[![CI](https://github.com/at0m-b0mb/DuckHound/actions/workflows/ci.yml/badge.svg)](https://github.com/at0m-b0mb/DuckHound/actions/workflows/ci.yml)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-22D3EE?style=flat-square)](#-installation)
 [![Python](https://img.shields.io/badge/python-3.9%2B-6366F1?style=flat-square&logo=python&logoColor=white)](https://www.python.org)
 [![UI](https://img.shields.io/badge/UI-PySide6%20(Qt)-41CD52?style=flat-square&logo=qt&logoColor=white)](https://doc.qt.io/qtforpython/)
