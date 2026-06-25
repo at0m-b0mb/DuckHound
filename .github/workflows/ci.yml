@@ -32,4 +32,4 @@ jobs:
         run: python -m compileall -q duckhound run.py scripts
 
       - name: Run unit tests
-        run: pytest -q tests
+        run: python -m pytest -q tests
