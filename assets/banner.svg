@@ -1,0 +1,99 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 380" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0C1426"/>
+      <stop offset="0.55" stop-color="#080C16"/>
+      <stop offset="1" stop-color="#05070D"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#22D3EE"/>
+      <stop offset="1" stop-color="#6366F1"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#22D3EE" stop-opacity="0.30"/>
+      <stop offset="0.6" stop-color="#22D3EE" stop-opacity="0.06"/>
+      <stop offset="1" stop-color="#22D3EE" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="sweep" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#22D3EE" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#22D3EE" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1200" height="380" rx="0" fill="url(#bg)"/>
+  <rect width="1200" height="380" fill="none"/>
+
+  <!-- Radar cluster (right) -->
+  <g transform="translate(965,196)">
+    <circle r="190" fill="url(#glow)"/>
+    <g fill="none" stroke="#FFFFFF" stroke-opacity="0.07">
+      <circle r="44"/><circle r="88"/><circle r="132"/><circle r="170"/>
+    </g>
+    <g stroke="#FFFFFF" stroke-opacity="0.06">
+      <line x1="-170" y1="0" x2="170" y2="0"/>
+      <line x1="0" y1="-170" x2="0" y2="170"/>
+    </g>
+    <!-- sweep wedge -->
+    <path d="M0 0 L154 -71 A170 170 0 0 1 147 85 Z" fill="url(#sweep)"/>
+    <line x1="0" y1="0" x2="154" y2="-71" stroke="#5BE7F7" stroke-width="2" stroke-opacity="0.9"/>
+    <circle r="5" fill="#22D3EE"/>
+    <!-- benign blips -->
+    <circle cx="-72" cy="-40" r="4" fill="#34D399" fill-opacity="0.9"/>
+    <circle cx="38" cy="92" r="4" fill="#22D3EE" fill-opacity="0.8"/>
+    <circle cx="-110" cy="60" r="3.5" fill="#22D3EE" fill-opacity="0.55"/>
+    <circle cx="96" cy="-104" r="3.5" fill="#60A5FA" fill-opacity="0.7"/>
+  </g>
+
+  <!-- Bad duck locked in the crosshair -->
+  <g transform="translate(1083,150)">
+    <circle r="34" fill="#FF3860" fill-opacity="0.08" stroke="#FF3860" stroke-width="2"/>
+    <g stroke="#FF3860" stroke-width="2" stroke-linecap="round">
+      <line x1="0" y1="-44" x2="0" y2="-30"/>
+      <line x1="0" y1="30" x2="0" y2="44"/>
+      <line x1="-44" y1="0" x2="-30" y2="0"/>
+      <line x1="30" y1="0" x2="44" y2="0"/>
+    </g>
+    <g transform="translate(-13,-13) scale(1.1)">
+      <path d="M15.5 7.2a3 3 0 10-4.7 3.6c-2.8.4-5 2-5.6 4.6-.2.9.4 1.6 1.3 1.6h7.2c3 0 5.4-2.1 5.4-5.1 0-1.6-.7-3-1.8-3.9z" fill="#FF5C7A"/>
+      <path d="M15.8 7.2l3.4-.7-2 2.4z" fill="#FBBF24"/>
+      <circle cx="13.1" cy="6.6" r="0.9" fill="#0B1020"/>
+    </g>
+  </g>
+
+  <!-- Left: brand mark -->
+  <g transform="translate(64,70)">
+    <rect width="92" height="92" rx="24" fill="#0F1828" stroke="url(#accent)" stroke-width="2"/>
+    <g transform="translate(16,14) scale(2.6)" fill="none" stroke="#22D3EE" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 3l7 3v5c0 4.5-3 7.8-7 9-4-1.2-7-4.5-7-9V6z"/>
+      <path d="M9 12l2 2 4-4"/>
+    </g>
+  </g>
+
+  <!-- Left: wordmark + copy -->
+  <text x="182" y="132" font-size="66" font-weight="800" letter-spacing="-1">
+    <tspan fill="#EAF1FB">Duck</tspan><tspan fill="url(#accent)">Hound</tspan>
+  </text>
+  <text x="184" y="170" font-size="25" font-weight="700" fill="#22D3EE">BadUSB &amp; Rubber Ducky Defense</text>
+  <text x="184" y="201" font-size="16.5" fill="#9AA8C2">Detect &amp; stop keystroke-injection attacks — Windows · macOS · Linux</text>
+
+  <!-- Feature pills -->
+  <g font-size="14" font-weight="600">
+    <g transform="translate(184,228)">
+      <rect width="318" height="34" rx="17" fill="#22D3EE" fill-opacity="0.10" stroke="#22D3EE" stroke-opacity="0.35"/>
+      <circle cx="20" cy="17" r="3.5" fill="#22D3EE"/>
+      <text x="34" y="22" fill="#BFE9F2">Keystroke-injection timing analysis</text>
+    </g>
+    <g transform="translate(514,228)">
+      <rect width="172" height="34" rx="17" fill="#34D399" fill-opacity="0.10" stroke="#34D399" stroke-opacity="0.35"/>
+      <circle cx="20" cy="17" r="3.5" fill="#34D399"/>
+      <text x="34" y="22" fill="#BdEFD9">Live USB watch</text>
+    </g>
+    <g transform="translate(698,228)">
+      <rect width="190" height="34" rx="17" fill="#FF3860" fill-opacity="0.10" stroke="#FF3860" stroke-opacity="0.35"/>
+      <circle cx="20" cy="17" r="3.5" fill="#FF5C7A"/>
+      <text x="34" y="22" fill="#FBC6D2">Auto-lock &amp; block</text>
+    </g>
+  </g>
+
+  <text x="184" y="306" font-size="13" fill="#5E6C86">v1.0 · MIT licensed · 100% local — no telemetry, ever</text>
+</svg>

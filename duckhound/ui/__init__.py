@@ -1,0 +1,1 @@
+"""DuckHound GUI (PySide6)."""

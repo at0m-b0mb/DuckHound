@@ -1,0 +1,9 @@
+# DuckHound runtime dependencies
+PySide6>=6.6           # Cross-platform Qt GUI
+pynput>=1.7            # Global keyboard hook for keystroke-injection detection
+psutil>=5.9            # Process/system helpers
+
+# Optional, per-platform USB enumeration (installed where available)
+pyudev>=0.24 ; sys_platform == "linux"      # Linux udev device events
+wmi>=1.5 ; sys_platform == "win32"          # Windows WMI device queries
+pywin32>=305 ; sys_platform == "win32"      # Windows APIs (lock workstation, WMI)

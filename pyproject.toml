@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "duckhound"
+version = "1.0.0"
+description = "Detect and stop BadUSB / Rubber Ducky keystroke-injection attacks. Cross-platform."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "at0m-b0mb" }]
+keywords = ["security", "badusb", "rubber-ducky", "hid", "keystroke-injection", "defense"]
+dependencies = [
+    "PySide6>=6.6",
+    "pynput>=1.7",
+    "psutil>=5.9",
+]
+
+[project.optional-dependencies]
+linux = ["pyudev>=0.24"]
+windows = ["wmi>=1.5", "pywin32>=305"]
+
+[project.scripts]
+duckhound = "duckhound.cli:main"
+
+[project.gui-scripts]
+duckhound-gui = "duckhound.app:main"
+
+[tool.setuptools.packages.find]
+include = ["duckhound*"]

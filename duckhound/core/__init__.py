@@ -1,0 +1,1 @@
+"""DuckHound detection core."""
