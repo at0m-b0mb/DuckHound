@@ -12,11 +12,12 @@ from ..components.card import Card
 from ..components.radar import Radar
 from ..components.stat_card import StatCard
 from ..components.threat_meter import ThreatMeter
-from ..theme import COLORS, SEVERITY
+from ..theme import COLORS, SEVERITY, rgba
 
 
 class DashboardPage(QWidget):
     toggle_monitor = Signal()
+    grant_access_requested = Signal()
 
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
@@ -24,9 +25,51 @@ class DashboardPage(QWidget):
         root.setContentsMargins(26, 22, 26, 22)
         root.setSpacing(18)
 
+        self.perm_bar = self._build_perm_bar()
+        self.perm_bar.setVisible(False)
+        root.addWidget(self.perm_bar)
         root.addLayout(self._build_header())
         root.addLayout(self._build_stats())
         root.addLayout(self._build_main(), 1)
+
+    # -- permission warning bar ---------------------------------------- #
+    def _build_perm_bar(self) -> QFrame:
+        bar = QFrame()
+        warn = COLORS["warn"]
+        bar.setStyleSheet(
+            f"background:{rgba(warn, 0.12)}; border:1px solid {rgba(warn, 0.45)};"
+            f"border-radius:14px;")
+        icon = QLabel()
+        icon.setPixmap(icons.pixmap("alert", warn, 22))
+        icon.setFixedSize(38, 38)
+        icon.setAlignment(Qt.AlignCenter)
+        icon.setStyleSheet(f"background:{rgba(warn, 0.14)}; border-radius:11px;")
+
+        self.perm_lbl = QLabel("Keystroke monitoring is blocked.")
+        self.perm_lbl.setWordWrap(True)
+        self.perm_lbl.setStyleSheet("font-size:13px; font-weight:600;")
+
+        grant = QPushButton("Grant Access")
+        grant.setProperty("accent", "true")
+        grant.setCursor(Qt.PointingHandCursor)
+        grant.clicked.connect(self.grant_access_requested.emit)
+
+        lay = QHBoxLayout(bar)
+        lay.setContentsMargins(14, 10, 14, 10)
+        lay.setSpacing(12)
+        lay.addWidget(icon)
+        lay.addWidget(self.perm_lbl, 1)
+        lay.addWidget(grant)
+        return bar
+
+    def set_permission(self, ok: bool, detail: str) -> None:
+        if ok:
+            self.perm_bar.setVisible(False)
+            return
+        self.perm_lbl.setText(
+            f"<b>Keystroke monitoring is blocked</b> — {detail}. "
+            "DuckHound cannot see injected keystrokes until this is fixed.")
+        self.perm_bar.setVisible(True)
 
     # -- header --------------------------------------------------------- #
     def _build_header(self) -> QHBoxLayout:

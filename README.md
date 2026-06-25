@@ -117,6 +117,42 @@ few seconds so you can watch the radar light up, the meter spike, and the respon
 
 ---
 
+## 🩺 Troubleshooting — "it didn't detect my Rubber Ducky!"
+
+> 99% of the time this is an **OS permission** issue. The global keyboard hook needs
+> permission to see keystrokes — without it, the OS silently delivers **zero** events
+> and DuckHound is flying blind. **Run the self-test first:**
+>
+> ```bash
+> python scripts/diagnose.py
+> ```
+> It checks permissions, the USB backend, and does a live 6-second capture so you can
+> *see* whether the hook is receiving input.
+
+**1. Are you in `--demo` mode?** Demo mode uses a *simulated* feed and ignores real
+keystrokes by design. Use plain `python run.py` to watch real input.
+
+**2. Grant keyboard-monitoring permission (the big one):**
+
+| OS | What to grant |
+|----|---------------|
+| **macOS** | *System Settings → Privacy & Security* → enable **Input Monitoring** *and* **Accessibility** for the app you launch DuckHound from (Terminal, iTerm, VS Code…). Then **fully quit and relaunch** that app. DuckHound now shows a yellow banner with a **Grant Access** button when this is missing. |
+| **Linux** | Use an **X11** session (Wayland restricts global key capture), or run with access to `/dev/input`. |
+| **Windows** | Works out of the box; run as Administrator only for device de-authorization. |
+
+**3. Make it actually _stop_ the attack.** By default DuckHound only **alerts**. To
+neutralize an attack, open **Settings → Automatic Response** and enable:
+- **Lock the screen** — on macOS this uses the screensaver, so also turn on
+  *System Settings → Lock Screen → "Require password immediately"*.
+- **Block injected keystrokes** — swallows input for ~2s to kill the rest of the payload.
+
+**4. Flipper Zero notes.** A Flipper running a BadUSB/DuckyScript payload enumerates as a
+USB keyboard and types far faster than a human — once permission is granted it trips the
+detector within ~18 keystrokes. If your script uses large per-key `DELAY`s, lower the
+**Human-speed ceiling** in Settings to widen the net.
+
+---
+
 ## 🧠 How detection works
 
 A Rubber Ducky betrays itself in two ways at once. DuckHound scores a rolling window of

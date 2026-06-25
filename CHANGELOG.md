@@ -3,6 +3,25 @@
 All notable changes to DuckHound are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.0.1] — 2026-06-25
+
+### Fixed
+- **Blind keyboard hook.** On macOS the global hook needs Input Monitoring /
+  Accessibility; without it `pynput` reported `running` while receiving zero
+  keystrokes, so real attacks (e.g. a Flipper Zero) went undetected. DuckHound now
+  preflights the permission, shows a dismissable warning banner with a **Grant Access**
+  button, and runs an 8-second watchdog that flags a hook receiving no input.
+- **Screen lock on modern macOS.** The old `CGSession` path was removed in recent macOS;
+  lock now falls back through ScreenSaverEngine → Ctrl-Cmd-Q → display sleep.
+
+### Added
+- `duckhound/core/permissions.py` — cross-platform permission preflight/prompt.
+- **Keystroke blocking** response — briefly suppresses input to neutralize the rest of an
+  injected payload.
+- `scripts/diagnose.py` — a self-test that confirms whether the hook can actually see
+  keystrokes (live capture), plus the USB backend and lock capability.
+- README **Troubleshooting** section.
+
 ## [1.0.0] — 2026-06-25
 
 ### Added
@@ -24,4 +43,5 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - DuckHound measures keystroke **timing only**, never key content, and performs no
   network access or telemetry.
 
+[1.0.1]: https://github.com/at0m-b0mb/DuckHound/releases/tag/v1.0.1
 [1.0.0]: https://github.com/at0m-b0mb/DuckHound/releases/tag/v1.0.0

@@ -22,6 +22,8 @@ class Responder:
         s = self.settings
         if s.notify and self.notify(title, detail):
             taken.append("Alerted")
+        if s.block_keystrokes and self.start_block_window():
+            taken.append("Blocked keystrokes")
         if s.lock_screen and self.lock_screen():
             taken.append("Locked screen")
         if s.deauthorize_device and self.deauthorize_hint():
@@ -53,11 +55,26 @@ class Responder:
     def lock_screen(self) -> bool:
         try:
             if sys.platform == "darwin":
-                # Works on modern macOS without extra privileges.
-                subprocess.run([
-                    "/System/Library/CoreServices/Menu Extras/User.menu/Contents/"
-                    "Resources/CGSession", "-suspend"
-                ], timeout=5)
+                # The classic CGSession path was removed in recent macOS, so try
+                # several no-entitlement methods in order of reliability.
+                # 1) Screensaver — locks instantly if "require password" is set.
+                try:
+                    subprocess.run(["open", "-a", "ScreenSaverEngine"], timeout=5)
+                    return True
+                except Exception:
+                    pass
+                # 2) Ctrl-Cmd-Q lock shortcut (needs Accessibility).
+                try:
+                    subprocess.run([
+                        "osascript", "-e",
+                        'tell application "System Events" to keystroke "q" '
+                        "using {control down, command down}",
+                    ], timeout=5)
+                    return True
+                except Exception:
+                    pass
+                # 3) Last resort: sleep the display.
+                subprocess.run(["pmset", "displaysleepnow"], timeout=5)
                 return True
             if sys.platform.startswith("linux"):
                 for cmd in (["loginctl", "lock-session"],
@@ -74,6 +91,31 @@ class Responder:
         except Exception:
             pass
         return False
+
+    def start_block_window(self, duration_s: float = 2.0) -> bool:
+        """Swallow ALL keyboard input for a brief window to neutralise the rest
+        of an injected payload. Best-effort: needs the same OS permission as the
+        detector, and intentionally short so a real user is barely affected."""
+        try:
+            from pynput import keyboard
+        except Exception:
+            return False
+        try:
+            listener = keyboard.Listener(
+                on_press=lambda _k: None, on_release=lambda _k: None,
+                suppress=True)
+            listener.start()
+        except Exception:
+            return False
+        import threading
+
+        def _release():
+            try:
+                listener.stop()
+            except Exception:
+                pass
+        threading.Timer(max(0.3, duration_s), _release).start()
+        return True
 
     def deauthorize_hint(self) -> bool:
         """Marker for the most aggressive response.

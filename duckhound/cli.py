@@ -49,6 +49,17 @@ def main() -> int:
     log("backend", C["cyan"],
         f"{backend.name} ({'live' if backend.supported else 'keystroke-only'})")
 
+    from .core import permissions
+    granted, detail = permissions.keystroke_access()
+    if not granted:
+        log("PERMISSION", C["red"] + C["bold"],
+            f"{C['bold']}keystroke hook is BLIND — {detail}{C['rst']}")
+        log("fix", C["yellow"],
+            f"grant access to {permissions.host_app_hint() or 'this app'}, "
+            "then restart DuckHound")
+    else:
+        log("access", C["green"], detail)
+
     def on_key(_key) -> None:
         v = analyzer.feed()
         if v.is_attack:

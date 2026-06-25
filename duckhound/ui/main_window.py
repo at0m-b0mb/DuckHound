@@ -67,13 +67,30 @@ class MainWindow(QWidget):
         e.devices_changed.connect(self.dashboard.set_devices)
         e.devices_changed.connect(self.devices.set_devices)
         e.threat_detected.connect(self._on_threat)
+        e.permission_status.connect(self.dashboard.set_permission)
 
         self.dashboard.toggle_monitor.connect(e.toggle)
+        self.dashboard.grant_access_requested.connect(self._on_grant_access)
         self.devices.trust_requested.connect(e.trust_device)
         self.devices.block_requested.connect(e.block_device)
         self.settings_page.settings_changed.connect(e.apply_settings)
 
+    def _on_grant_access(self) -> None:
+        ok = self.engine.request_access()
+        if ok:
+            self.dashboard.set_status("Permission granted — re-arming monitor")
+            if self.engine.monitoring:
+                self.engine.stop()
+                self.engine.start()
+        else:
+            self.dashboard.set_status(
+                "Approve DuckHound in System Settings → Privacy, then re-arm")
+
     def _prime(self) -> None:
+        if not self.engine.demo:
+            from ..core import permissions
+            ok, detail = permissions.keystroke_access()
+            self.dashboard.set_permission(ok, detail)
         self.dashboard.set_stats(self.engine.snapshot_stats())
         self.dashboard.set_devices(self.engine.device_list())
         self.dashboard.set_monitoring(self.engine.monitoring)

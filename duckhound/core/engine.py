@@ -16,7 +16,7 @@ import time
 from PySide6.QtCore import QObject, QTimer, Signal
 
 from ..config import Settings
-from . import simulator
+from . import permissions, simulator
 from .backends import get_backend
 from .keystroke import KeystrokeAnalyzer, Verdict
 from .models import Device, DeviceState, Severity, ThreatEvent
@@ -31,6 +31,7 @@ class DetectionEngine(QObject):
     activity = Signal(float, float)          # (threat_score 0-100, keys/sec)
     stats_changed = Signal(dict)
     status_text = Signal(str)
+    permission_status = Signal(bool, str)    # (hook_can_see_keys, detail)
 
     def __init__(self, settings: Settings, demo: bool = False) -> None:
         super().__init__()
@@ -63,6 +64,13 @@ class DetectionEngine(QObject):
         self._decay_timer.timeout.connect(self._decay)
         self._level = 0.0
 
+        # Watchdog: catch a "running" hook that is actually blind (no permission).
+        self._keys_since_start = 0
+        self._hook_watchdog = QTimer(self)
+        self._hook_watchdog.setSingleShot(True)
+        self._hook_watchdog.setInterval(8000)
+        self._hook_watchdog.timeout.connect(self._check_hook_alive)
+
         # Demo machinery.
         self._demo_timer = QTimer(self)
         self._demo_timer.timeout.connect(self._maybe_demo_attack)
@@ -90,9 +98,16 @@ class DetectionEngine(QObject):
         else:
             self._poll_usb()
             self._usb_timer.start()
+            self._keys_since_start = 0
+            ok, detail = permissions.keystroke_access()
+            self.permission_status.emit(ok, detail)
             self._start_keyboard_hook()
             who = self.backend.name if self.backend.supported else "keystroke-only"
-            self.status_text.emit(f"Live — monitoring keystrokes + USB ({who})")
+            if ok:
+                self.status_text.emit(f"Live — monitoring keystrokes + USB ({who})")
+            else:
+                self.status_text.emit(f"⚠ Keystroke hook is BLIND — {detail}")
+            self._hook_watchdog.start()
         self.monitoring_changed.emit(True)
         self._emit_stats()
 
@@ -104,6 +119,7 @@ class DetectionEngine(QObject):
         self._demo_timer.stop()
         self._burst_timer.stop()
         self._decay_timer.stop()
+        self._hook_watchdog.stop()
         self._stop_keyboard_hook()
         self.activity.emit(0.0, 0.0)
         self.monitoring_changed.emit(False)
@@ -147,12 +163,34 @@ class DetectionEngine(QObject):
 
     def _on_key(self, _key) -> None:
         """Runs on the pynput thread; signals marshal back to the GUI."""
+        if self._keys_since_start == 0:
+            self._hook_watchdog.stop()  # proof the hook can see input
+        self._keys_since_start += 1
         verdict = self.analyzer.feed()
         self._keys_analyzed += 1
         self._level = max(self._level, float(verdict.score))
         self.activity.emit(float(verdict.score), verdict.cps)
         if verdict.is_attack:
             self._raise_threat(self._suspect_device(), verdict)
+
+    def _check_hook_alive(self) -> None:
+        """Fired ~8s after arming. If we've seen no keystrokes AND lack
+        permission, the hook is blind — say so plainly."""
+        if not self.monitoring or self.demo:
+            return
+        if self._keys_since_start == 0:
+            ok, detail = permissions.keystroke_access()
+            if not ok:
+                self.permission_status.emit(False, detail)
+                self.status_text.emit(
+                    f"⚠ No keystrokes captured — hook blocked. {detail}")
+
+    def request_access(self) -> bool:
+        """Prompt OS permission dialogs and re-check. Returns new grant state."""
+        permissions.request_keystroke_access()
+        ok, detail = permissions.keystroke_access()
+        self.permission_status.emit(ok, detail)
+        return ok
 
     def _suspect_device(self) -> Device | None:
         """Best guess at which device is typing: the most recently added input
