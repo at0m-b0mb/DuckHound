@@ -3,6 +3,22 @@
 All notable changes to DuckHound are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.1.0] — 2026-06-26
+
+### Added — "Aurora Glass" redesign + set-and-forget protection
+- **New Aurora-Glass theme** — deep canvas lit by a painted cyan→indigo→violet aurora,
+  with translucent frosted-glass cards, soft glows and gradient accents throughout.
+- **Status hero** on the dashboard — a big PROTECTED / AT-RISK / EXPOSED state with a
+  live **Protection Score** ring, safeguard chips, and a one-click **Lock Now (Panic)**.
+- **Protection page** (`core/health.py`) — scores all six defence layers (armed, lockdown,
+  screen-lock, keystroke permission, trusted-keyboard baseline, auto-arm) and offers a
+  one-click **Fix** for each, plus **Fix everything**. Now you can *prove* it'll stop a
+  Ducky/Flipper, not just hope so.
+- **System tray + auto-arm** — runs in the background; tray menu for Pause/Lock/Open/Quit;
+  closing the window keeps protection alive. Arms automatically on launch.
+- **Audible alarm** (`core/alarm.py`) — a generated two-tone siren on a confirmed attack,
+  played natively per-OS, plus tray notifications.
+
 ## [1.0.5] — 2026-06-26
 
 ### Fixed
@@ -100,6 +116,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - DuckHound measures keystroke **timing only**, never key content, and performs no
   network access or telemetry.
 
+[1.1.0]: https://github.com/at0m-b0mb/DuckHound/releases/tag/v1.1.0
 [1.0.5]: https://github.com/at0m-b0mb/DuckHound/releases/tag/v1.0.5
 [1.0.4]: https://github.com/at0m-b0mb/DuckHound/releases/tag/v1.0.4
 [1.0.3]: https://github.com/at0m-b0mb/DuckHound/releases/tag/v1.0.3

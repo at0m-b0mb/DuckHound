@@ -45,6 +45,7 @@ class Sidebar(QFrame):
 
     SECTIONS = [
         ("Dashboard", "radar"),
+        ("Protection", "shield"),
         ("Devices", "usb"),
         ("Threats", "alert"),
         ("Settings", "gear"),
@@ -52,10 +53,10 @@ class Sidebar(QFrame):
 
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
-        self.setFixedWidth(228)
+        self.setFixedWidth(232)
         self.setStyleSheet(
-            f"background: {COLORS['surface']};"
-            f"border-right: 1px solid {COLORS['stroke_soft']};")
+            f"background: {rgba('surface', 0.45)};"
+            f"border-right: 1px solid {COLORS['glass_brd']};")
 
         # Brand.
         mark = QLabel()

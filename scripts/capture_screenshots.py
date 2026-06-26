@@ -80,6 +80,27 @@ def stage(win) -> None:
                                ("046d:c534", "Logitech Unifying Receiver")])
     win.threats.set_events(list(eng.events))
 
+    # Stage a fully-protected report for the hero + Protection page.
+    import duckhound.core.permissions as perms
+    perms.keystroke_access = lambda: (True, "Input Monitoring + Accessibility granted")
+    from duckhound.core import health
+    s = win.settings
+    s.lockdown_new_keyboards = s.lock_on_lockdown = s.autostart_monitor = True
+    s.trusted_devices = ["05ac:0259", "046d:c534"]
+    report = health.assess(True, s)
+    win.dashboard.hero.flash_attack(False)        # clean PROTECTED frame
+    win.dashboard.set_report(report)
+    win.dashboard.set_monitoring(True)
+    win.dashboard.set_status("Live — monitoring keystrokes + USB (macos/ioreg-hid)")
+    win.protection.set_report(report)
+    # Calm, idle dashboard (history of blocks, currently secure).
+    win.dashboard.meter._value = win.dashboard.meter._target = 7.0
+    win.dashboard.radar._level = 7.0
+    win.dashboard.radar._pings.clear()
+    win.dashboard.signal_lbl.setText("0 keys/sec")
+    for ring in (win.dashboard.hero.ring, win.protection.ring):
+        ring._value = ring._target                # freeze at final score
+
 
 def grab(win, index: int, name: str) -> None:
     win.sidebar.select(index)
@@ -102,7 +123,8 @@ def main() -> int:
     win.show()
     QApplication.processEvents()
     stage(win)
-    for idx, name in enumerate(("dashboard", "devices", "threats", "settings")):
+    for idx, name in enumerate(("dashboard", "protection", "devices",
+                                "threats", "settings")):
         grab(win, idx, name)
     print("done.")
     return 0

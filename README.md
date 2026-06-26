@@ -35,9 +35,15 @@ that signature, and slams the door shut.
 
 ## ✨ Highlights
 
+- 🛡️ **Protection Score** — a live readout of all six defence layers with one-click
+  **Fix** for anything that's off, so you can *prove* it'll stop a Ducky/Flipper.
 - 🔒 **Lockdown mode** — the instant an untrusted keyboard appears (or an injection burst
   is seen), DuckHound **freezes all keyboard input** and demands you approve it *with the
   mouse*. A Rubber Ducky can't type its way out.
+- 🖥️ **Always-on** — runs in the **system tray**, auto-arms on launch, keeps guarding when
+  you close the window, and fires an **audible siren** + notification on attack.
+- 🎨 **Aurora-Glass UI** — a gorgeous dark interface with frosted-glass cards, a cyan→
+  indigo→violet aurora, animated radar and a one-tap **Panic / Lock-now** button.
 - 🎯 **Keystroke-injection detection** — a real-time timing engine that scores every
   burst of input on *speed* and *regularity*. Flags machine typing; ignores even the
   fastest human.
@@ -63,8 +69,11 @@ that signature, and slams the door shut.
 
 <div align="center">
 
-### Dashboard — live radar, threat meter & activity feed
+### Dashboard — status hero, protection score, live radar & threat meter
 <img src="assets/screenshots/dashboard.png" alt="DuckHound dashboard" width="90%"/>
+
+### Protection — score every defence layer, fix what's off in one click
+<img src="assets/screenshots/protection.png" alt="DuckHound protection score" width="90%"/>
 
 ### Devices — every connected device, trust or block in one click
 <img src="assets/screenshots/devices.png" alt="DuckHound devices page" width="90%"/>
