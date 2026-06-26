@@ -16,6 +16,7 @@ class DevicesPage(QWidget):
     block_requested = Signal(str)
     untrust_requested = Signal(str)
     trust_all_requested = Signal()
+    rescan_requested = Signal()
 
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
@@ -27,10 +28,20 @@ class DevicesPage(QWidget):
         title.setProperty("role", "h1")
         self.subtitle = QLabel("Watching the USB bus…")
         self.subtitle.setProperty("role", "muted")
-        head = QVBoxLayout()
-        head.setSpacing(2)
-        head.addWidget(title)
-        head.addWidget(self.subtitle)
+        titles = QVBoxLayout()
+        titles.setSpacing(2)
+        titles.addWidget(title)
+        titles.addWidget(self.subtitle)
+
+        rescan = QPushButton("  Rescan")
+        rescan.setProperty("ghost", "true")
+        rescan.setCursor(Qt.PointingHandCursor)
+        rescan.setIcon(icons.icon("scan", COLORS["accent"], 16))
+        rescan.clicked.connect(self.rescan_requested.emit)
+
+        head = QHBoxLayout()
+        head.addLayout(titles, 1)
+        head.addWidget(rescan, 0, Qt.AlignTop)
         root.addLayout(head)
 
         # --- Allow-list card -------------------------------------------- #

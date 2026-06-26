@@ -3,6 +3,19 @@
 All notable changes to DuckHound are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.0.5] — 2026-06-26
+
+### Fixed
+- **Connected devices are now visible before you arm.** The list used to be empty until
+  monitoring started; the app now does an initial scan at launch (`engine.enumerate_once`)
+  and the Devices page has a **Rescan** button to refresh on demand — so you can always
+  see, trust and revoke keyboards.
+- **No more spurious lockdowns.** Lockdown now fires only for a genuinely *first-seen
+  keyboard* (tracked in `_ever_seen`) — not a mouse, and not a Logitech receiver that
+  flickers in and out of `ioreg`, which could make arming feel broken.
+- **Smoother arming** — USB poll relaxed from 400ms to 800ms to reduce UI jank from the
+  `ioreg` subprocess on the main thread.
+
 ## [1.0.4] — 2026-06-26
 
 ### Added
@@ -87,6 +100,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - DuckHound measures keystroke **timing only**, never key content, and performs no
   network access or telemetry.
 
+[1.0.5]: https://github.com/at0m-b0mb/DuckHound/releases/tag/v1.0.5
 [1.0.4]: https://github.com/at0m-b0mb/DuckHound/releases/tag/v1.0.4
 [1.0.3]: https://github.com/at0m-b0mb/DuckHound/releases/tag/v1.0.3
 [1.0.2]: https://github.com/at0m-b0mb/DuckHound/releases/tag/v1.0.2

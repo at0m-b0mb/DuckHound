@@ -20,7 +20,7 @@ from ..config import Settings
 from . import permissions, simulator
 from .backends import get_backend
 from .keystroke import KeystrokeAnalyzer, Verdict
-from .models import Device, DeviceState, Severity, ThreatEvent
+from .models import Device, DeviceKind, DeviceState, Severity, ThreatEvent
 from .responder import Responder
 
 
@@ -62,7 +62,7 @@ class DetectionEngine(QObject):
         self._usb_timer = QTimer(self)
         # ioreg (macOS) and sysfs (Linux) are cheap, so poll fast to catch a
         # rogue keyboard within ~1s; Windows PnP queries are heavier.
-        self._usb_timer.setInterval(2500 if sys.platform.startswith("win") else 400)
+        self._usb_timer.setInterval(2500 if sys.platform.startswith("win") else 800)
         self._usb_timer.timeout.connect(self._poll_usb)
 
         self._decay_timer = QTimer(self)
@@ -81,6 +81,7 @@ class DetectionEngine(QObject):
         self._lockdown_active = False
         self._lockdown_key = ""
         self._baseline_done = False  # don't lock down devices present at arm time
+        self._ever_seen: set[str] = set()  # keys we've seen — guards ioreg flicker
         self._failsafe = QTimer(self)
         self._failsafe.setSingleShot(True)
         self._failsafe.setInterval(30000)
@@ -225,6 +226,19 @@ class DetectionEngine(QObject):
     # USB polling (live mode)
     # ------------------------------------------------------------------ #
     def _poll_usb(self) -> None:
+        """Live poll: refresh devices and lock down genuinely-new keyboards."""
+        self._sync_devices(allow_lockdown=True)
+        self._baseline_done = True  # subsequent arrivals are genuinely new
+
+    def enumerate_once(self) -> None:
+        """Populate/refresh the device list WITHOUT arming or locking down.
+
+        Lets the Devices page show what's connected before you arm, and backs
+        the manual Rescan button.
+        """
+        self._sync_devices(allow_lockdown=False)
+
+    def _sync_devices(self, allow_lockdown: bool) -> None:
         try:
             current = {d.key: d for d in self.backend.enumerate()}
         except Exception:
@@ -237,11 +251,18 @@ class DetectionEngine(QObject):
                 elif key in self.settings.trusted_devices:
                     dev.state = DeviceState.TRUSTED
                 self.devices[key] = dev
-                self.analyzer.reset()  # a fresh keyboard restarts the burst clock
+                if allow_lockdown:
+                    self.analyzer.reset()  # fresh keyboard restarts the burst clock
                 self.device_announced.emit(dev, True)
-                if (self._baseline_done and self.settings.lockdown_new_keyboards
-                        and dev.is_input and dev.state != DeviceState.TRUSTED):
+                # Lock down ONLY a real, first-ever-seen keyboard — not a mouse
+                # or a Logitech receiver that flickers in/out of ioreg.
+                first_time = key not in self._ever_seen
+                if (allow_lockdown and self._baseline_done and first_time
+                        and self.settings.lockdown_new_keyboards
+                        and dev.kind == DeviceKind.KEYBOARD
+                        and dev.state != DeviceState.TRUSTED):
                     self._engage_lockdown(dev, f"New keyboard connected: {dev.name}")
+                self._ever_seen.add(key)
             else:
                 self.devices[key].last_seen = time.time()
         # Departures — releasing lockdown if the offending device is unplugged.
@@ -250,7 +271,6 @@ class DetectionEngine(QObject):
                 self.devices.pop(key, None)
                 if self._lockdown_active and key == self._lockdown_key:
                     self.release_lockdown()
-        self._baseline_done = True  # subsequent arrivals are genuinely new
         self.devices_changed.emit(self._device_list())
         self._emit_stats()
 

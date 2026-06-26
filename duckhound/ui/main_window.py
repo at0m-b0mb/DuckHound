@@ -84,6 +84,7 @@ class MainWindow(QWidget):
         self.devices.block_requested.connect(e.block_device)
         self.devices.untrust_requested.connect(e.untrust_device)
         self.devices.trust_all_requested.connect(e.trust_all_current)
+        self.devices.rescan_requested.connect(e.enumerate_once)
         self.settings_page.settings_changed.connect(e.apply_settings)
 
     def _on_lockdown_engaged(self, device, reason: str) -> None:
@@ -117,6 +118,7 @@ class MainWindow(QWidget):
             from ..core import permissions
             ok, detail = permissions.keystroke_access()
             self.dashboard.set_permission(ok, detail)
+            self.engine.enumerate_once()  # show connected devices before arming
         self.dashboard.set_stats(self.engine.snapshot_stats())
         self.dashboard.set_devices(self.engine.device_list())
         self.dashboard.set_monitoring(self.engine.monitoring)
