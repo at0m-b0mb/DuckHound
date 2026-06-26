@@ -3,6 +3,19 @@
 All notable changes to DuckHound are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.1.1] — 2026-06-26
+
+### Fixed
+- **Crash on arming once keystrokes flowed.** The global keyboard hook fires on
+  pynput's own thread, and `_on_key` was touching Qt timers / engine state from there
+  ("QObject::killTimer: Timers cannot be stopped from another thread") — which crashed the
+  app on macOS the moment input arrived after you pressed **Arm**. Keystrokes are now
+  marshalled to the GUI thread via a queued signal (`_keystroke → _handle_key`), so all
+  Qt/timer work happens safely on the main thread. Verified with injected bursts from a
+  background thread: detection fires, no crash, clean exit.
+- **Crash diagnostics.** Added a log + fault handler (`~/…/DuckHound/duckhound.log`) so any
+  future "it just stopped" leaves a traceback to act on.
+
 ## [1.1.0] — 2026-06-26
 
 ### Added — "Aurora Glass" redesign + set-and-forget protection
@@ -116,6 +129,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - DuckHound measures keystroke **timing only**, never key content, and performs no
   network access or telemetry.
 
+[1.1.1]: https://github.com/at0m-b0mb/DuckHound/releases/tag/v1.1.1
 [1.1.0]: https://github.com/at0m-b0mb/DuckHound/releases/tag/v1.1.0
 [1.0.5]: https://github.com/at0m-b0mb/DuckHound/releases/tag/v1.0.5
 [1.0.4]: https://github.com/at0m-b0mb/DuckHound/releases/tag/v1.0.4

@@ -14,7 +14,7 @@ import random
 import sys
 import time
 
-from PySide6.QtCore import QObject, QTimer, Signal
+from PySide6.QtCore import Qt, QObject, QTimer, Signal
 
 from ..config import Settings
 from . import permissions, simulator
@@ -30,6 +30,7 @@ class DetectionEngine(QObject):
     device_announced = Signal(object, bool)  # (Device, is_new)
     threat_detected = Signal(object)         # ThreatEvent
     activity = Signal(float, float)          # (threat_score 0-100, keys/sec)
+    _keystroke = Signal(float)               # internal: marshal key time -> GUI thread
     stats_changed = Signal(dict)
     status_text = Signal(str)
     permission_status = Signal(bool, str)    # (hook_can_see_keys, detail)
@@ -76,6 +77,9 @@ class DetectionEngine(QObject):
         self._hook_watchdog.setSingleShot(True)
         self._hook_watchdog.setInterval(8000)
         self._hook_watchdog.timeout.connect(self._check_hook_alive)
+
+        # Keystrokes arrive on the pynput thread; force them onto the GUI thread.
+        self._keystroke.connect(self._handle_key, Qt.QueuedConnection)
 
         # Lockdown state + a failsafe so a bug can never trap the keyboard.
         self._lockdown_active = False
@@ -180,11 +184,20 @@ class DetectionEngine(QObject):
             self._listener = None
 
     def _on_key(self, _key) -> None:
-        """Runs on the pynput thread; signals marshal back to the GUI."""
+        """Runs on the **pynput thread** — do NOTHING here but capture the press
+        time and hand off to the GUI thread. Touching QTimers / engine state from
+        this thread crashes Qt ('Timers cannot be stopped from another thread')."""
+        try:
+            self._keystroke.emit(time.monotonic())
+        except Exception:
+            pass
+
+    def _handle_key(self, ts: float) -> None:
+        """Runs on the GUI thread (queued from _on_key). Safe to touch timers."""
         if self._keys_since_start == 0:
             self._hook_watchdog.stop()  # proof the hook can see input
         self._keys_since_start += 1
-        verdict = self.analyzer.feed()
+        verdict = self.analyzer.feed(ts)
         self._keys_analyzed += 1
         self._level = max(self._level, float(verdict.score))
         self.activity.emit(float(verdict.score), verdict.cps)
