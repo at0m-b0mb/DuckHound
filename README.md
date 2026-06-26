@@ -44,6 +44,9 @@ that signature, and slams the door shut.
 - 🔌 **Live USB / HID watch** — enumerates connected devices on Windows, macOS and
   Linux and correlates a brand-new "keyboard" with an instant typing burst (the
   classic Ducky tell).
+- ✅ **Persistent allow-list** — approve your real keyboards once (or "Trust all
+  connected" as a baseline); after that only *unknown* devices ever trigger a lock.
+  Revoke anytime.
 - 🚨 **Active response** — alert, sound the alarm, **lock the screen**, swallow injected
   keystrokes, or flag the rogue device for de-authorization. You choose how aggressive.
 - 📡 **A gorgeous SOC dashboard** — animated radar, live threat meter, device roster and

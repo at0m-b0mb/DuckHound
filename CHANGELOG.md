@@ -3,6 +3,21 @@
 All notable changes to DuckHound are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.0.4] — 2026-06-26
+
+### Added
+- **Persistent device allow-list.** Approve your real keyboards once and only *unknown*
+  devices ever trigger a lock. The Devices page now has an **Allow-list** card with a
+  one-click **"Trust all connected"** baseline button, friendly device names, and
+  **Revoke** on every trusted entry; trusting persists across restarts
+  (`trusted_devices` + `trusted_labels`). Engine gains `untrust_device`,
+  `trust_all_current`, `trusted_list` and an `allowlist_changed` signal.
+
+### Note
+- A device on the allow-list is intentionally skipped by detection and Lockdown. If a
+  Ducky/Flipper ever stops triggering, check the Allow-list and **Revoke** it — approving
+  the lockdown prompt for an attacker device whitelists it.
+
 ## [1.0.3] — 2026-06-25
 
 ### Added / Changed
@@ -72,6 +87,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - DuckHound measures keystroke **timing only**, never key content, and performs no
   network access or telemetry.
 
+[1.0.4]: https://github.com/at0m-b0mb/DuckHound/releases/tag/v1.0.4
 [1.0.3]: https://github.com/at0m-b0mb/DuckHound/releases/tag/v1.0.3
 [1.0.2]: https://github.com/at0m-b0mb/DuckHound/releases/tag/v1.0.2
 [1.0.1]: https://github.com/at0m-b0mb/DuckHound/releases/tag/v1.0.1

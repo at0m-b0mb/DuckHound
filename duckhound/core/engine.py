@@ -35,6 +35,7 @@ class DetectionEngine(QObject):
     permission_status = Signal(bool, str)    # (hook_can_see_keys, detail)
     lockdown_engaged = Signal(object, str)   # (Device|None, reason)
     lockdown_released = Signal()
+    allowlist_changed = Signal(list)         # list[(key, label)]
 
     def __init__(self, settings: Settings, demo: bool = False) -> None:
         super().__init__()
@@ -335,15 +336,47 @@ class DetectionEngine(QObject):
         self.status_text.emit("Lockdown lifted — keyboard restored")
         self.lockdown_released.emit()
 
-    def trust_device(self, key: str) -> None:
-        dev = self.devices.get(key)
-        if not dev:
+    def trust_device(self, key: str, label: str = "") -> None:
+        """Add a device to the persistent allow-list; it never triggers again."""
+        if not key:
             return
-        dev.state = DeviceState.TRUSTED
+        dev = self.devices.get(key)
+        if dev:
+            dev.state = DeviceState.TRUSTED
+            label = label or dev.name
         if key not in self.settings.trusted_devices:
             self.settings.trusted_devices.append(key)
-            self.settings.save()
+        if label:
+            self.settings.trusted_labels[key] = label
+        self.settings.save()
         self.devices_changed.emit(self._device_list())
+        self.allowlist_changed.emit(self.trusted_list())
+
+    def untrust_device(self, key: str) -> None:
+        """Revoke a device from the allow-list."""
+        if key in self.settings.trusted_devices:
+            self.settings.trusted_devices.remove(key)
+        self.settings.trusted_labels.pop(key, None)
+        self.settings.save()
+        dev = self.devices.get(key)
+        if dev and dev.state == DeviceState.TRUSTED:
+            dev.state = DeviceState.KNOWN
+        self.devices_changed.emit(self._device_list())
+        self.allowlist_changed.emit(self.trusted_list())
+
+    def trust_all_current(self) -> int:
+        """One-click baseline: allow-list every connected input device."""
+        count = 0
+        for dev in list(self.devices.values()):
+            if dev.is_input and dev.state != DeviceState.TRUSTED:
+                self.trust_device(dev.key, dev.name)
+                count += 1
+        return count
+
+    def trusted_list(self) -> list[tuple[str, str]]:
+        """The allow-list as (key, friendly-name), for the UI."""
+        labels = self.settings.trusted_labels
+        return [(k, labels.get(k, k)) for k in self.settings.trusted_devices]
 
     def block_device(self, key: str) -> None:
         dev = self.devices.get(key)

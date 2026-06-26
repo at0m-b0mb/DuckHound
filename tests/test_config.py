@@ -38,3 +38,22 @@ def test_trusted_devices_not_shared():
     a, b = Settings(), Settings()
     a.trusted_devices.append("x")
     assert b.trusted_devices == []
+
+
+def test_allowlist_round_trip(tmp_path, monkeypatch):
+    """Allow-list keys + friendly labels survive save/load."""
+    monkeypatch.setattr(cfg, "CONFIG_PATH", tmp_path / "config.json")
+    s = Settings()
+    s.trusted_devices.append("046d:c534")
+    s.trusted_labels["046d:c534"] = "Logitech Receiver"
+    s.save()
+
+    loaded = Settings.load()
+    assert loaded.trusted_devices == ["046d:c534"]
+    assert loaded.trusted_labels["046d:c534"] == "Logitech Receiver"
+
+
+def test_trusted_labels_not_shared():
+    a, b = Settings(), Settings()
+    a.trusted_labels["x"] = "y"
+    assert b.trusted_labels == {}

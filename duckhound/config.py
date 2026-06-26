@@ -51,7 +51,8 @@ class Settings:
     minimize_to_tray: bool = True
     trust_internal_keyboard: bool = True  # don't flag the built-in keyboard
 
-    trusted_devices: list[str] = field(default_factory=list)  # device keys
+    trusted_devices: list[str] = field(default_factory=list)  # allow-listed keys
+    trusted_labels: dict = field(default_factory=dict)        # key -> friendly name
 
     def save(self) -> None:
         CONFIG_PATH.write_text(json.dumps(asdict(self), indent=2))

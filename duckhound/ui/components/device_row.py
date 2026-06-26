@@ -18,6 +18,7 @@ _KIND_ICON = {
 class DeviceRow(QFrame):
     trust_requested = Signal(str)
     block_requested = Signal(str)
+    untrust_requested = Signal(str)
 
     def __init__(self, device, parent=None) -> None:
         super().__init__(parent)
@@ -62,9 +63,21 @@ class DeviceRow(QFrame):
         self.block_btn.setCursor(Qt.PointingHandCursor)
         self.block_btn.clicked.connect(lambda: self.block_requested.emit(device.key))
 
-        if state in ("trusted", "blocked"):
-            self.trust_btn.setVisible(state != "trusted")
-            self.block_btn.setVisible(state != "blocked")
+        self.revoke_btn = QPushButton("Revoke trust")
+        self.revoke_btn.setProperty("ghost", "true")
+        self.revoke_btn.setCursor(Qt.PointingHandCursor)
+        self.revoke_btn.clicked.connect(lambda: self.untrust_requested.emit(device.key))
+
+        # Trusted devices show only "Revoke"; blocked show only "Trust";
+        # everything else gets the usual Trust / Block pair.
+        if state == "trusted":
+            self.trust_btn.setVisible(False)
+            self.block_btn.setVisible(False)
+        elif state == "blocked":
+            self.block_btn.setVisible(False)
+            self.revoke_btn.setVisible(False)
+        else:
+            self.revoke_btn.setVisible(False)
 
         lay = QHBoxLayout(self)
         lay.setContentsMargins(12, 10, 12, 10)
@@ -75,3 +88,4 @@ class DeviceRow(QFrame):
         lay.addSpacing(4)
         lay.addWidget(self.trust_btn)
         lay.addWidget(self.block_btn)
+        lay.addWidget(self.revoke_btn)

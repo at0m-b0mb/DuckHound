@@ -76,6 +76,8 @@ def stage(win) -> None:
         win.dashboard.on_threat(ev)
 
     win.devices.set_devices(eng.device_list())
+    win.devices.set_allowlist([("05ac:0259", "Apple Internal Keyboard"),
+                               ("046d:c534", "Logitech Unifying Receiver")])
     win.threats.set_events(list(eng.events))
 
 

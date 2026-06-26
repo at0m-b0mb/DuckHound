@@ -76,11 +76,14 @@ class MainWindow(QWidget):
         e.permission_status.connect(self.dashboard.set_permission)
         e.lockdown_engaged.connect(self._on_lockdown_engaged)
         e.lockdown_released.connect(self._on_lockdown_released)
+        e.allowlist_changed.connect(self.devices.set_allowlist)
 
         self.dashboard.toggle_monitor.connect(e.toggle)
         self.dashboard.grant_access_requested.connect(self._on_grant_access)
         self.devices.trust_requested.connect(e.trust_device)
         self.devices.block_requested.connect(e.block_device)
+        self.devices.untrust_requested.connect(e.untrust_device)
+        self.devices.trust_all_requested.connect(e.trust_all_current)
         self.settings_page.settings_changed.connect(e.apply_settings)
 
     def _on_lockdown_engaged(self, device, reason: str) -> None:
@@ -118,6 +121,7 @@ class MainWindow(QWidget):
         self.dashboard.set_devices(self.engine.device_list())
         self.dashboard.set_monitoring(self.engine.monitoring)
         self.devices.set_devices(self.engine.device_list())
+        self.devices.set_allowlist(self.engine.trusted_list())
         self.threats.set_events(list(self.engine.events))
         for ev in reversed(self.engine.events):
             self.dashboard.on_threat(ev)
