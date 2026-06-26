@@ -62,7 +62,7 @@ class DetectionEngine(QObject):
         self._usb_timer = QTimer(self)
         # ioreg (macOS) and sysfs (Linux) are cheap, so poll fast to catch a
         # rogue keyboard within ~1s; Windows PnP queries are heavier.
-        self._usb_timer.setInterval(2500 if sys.platform.startswith("win") else 900)
+        self._usb_timer.setInterval(2500 if sys.platform.startswith("win") else 400)
         self._usb_timer.timeout.connect(self._poll_usb)
 
         self._decay_timer = QTimer(self)
