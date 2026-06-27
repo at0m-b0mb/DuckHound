@@ -46,7 +46,8 @@ class ProtectionReport:
 
 
 def assess(monitoring: bool, settings) -> ProtectionReport:
-    perm_ok, perm_detail = permissions.keystroke_access()
+    perm_ok, perm_detail = permissions.listen_access()
+    block_ok, block_detail = permissions.block_access()
     checks = [
         Check("armed", "Monitoring is armed", monitoring,
               "DuckHound is actively watching the keyboard + USB bus."
@@ -64,6 +65,10 @@ def assess(monitoring: bool, settings) -> ProtectionReport:
               else "Turn on screen-lock so injected keystrokes hit a locked screen.",
               weight=1),
         Check("perm", "Keystroke-monitoring permission", perm_ok, perm_detail,
+              weight=2),
+        Check("block", "Keystroke-blocking permission", block_ok,
+              "DuckHound can freeze a rogue keyboard's input." if block_ok
+              else block_detail + " — required to actually STOP an attack.",
               weight=2),
         Check("baseline", "Trusted-keyboard baseline", bool(settings.trusted_devices),
               "Your real keyboards are allow-listed, so only unknown devices "

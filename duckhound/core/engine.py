@@ -163,6 +163,22 @@ class DetectionEngine(QObject):
     # Keyboard hook (live mode)
     # ------------------------------------------------------------------ #
     def _start_keyboard_hook(self) -> None:
+        # macOS: use a native CGEventTap (timing only, main thread). pynput's
+        # mac listener decodes keys via Carbon on a background thread, which
+        # crashes on macOS 26 the instant the hook starts after Arm.
+        if sys.platform == "darwin":
+            from .mac_input import MacKeyTap
+            try:
+                self._listener = MacKeyTap(on_press=self._on_key_main)
+                if not self._listener.start():
+                    self._listener = None
+                    self.status_text.emit(
+                        "Keystroke hook blocked — grant Input Monitoring")
+            except Exception as exc:
+                self._listener = None
+                self.status_text.emit(f"Keystroke hook error ({exc})")
+            return
+        # Windows / Linux: pynput works fine.
         try:
             from pynput import keyboard
         except Exception:
@@ -174,6 +190,10 @@ class DetectionEngine(QObject):
         except Exception as exc:  # permission denied, headless, etc.
             self._listener = None
             self.status_text.emit(f"Keystroke hook blocked — grant Input Monitoring ({exc})")
+
+    def _on_key_main(self) -> None:
+        """macOS tap callback — already on the GUI/main thread, so handle directly."""
+        self._handle_key(time.monotonic())
 
     def _stop_keyboard_hook(self) -> None:
         if self._listener is not None:
@@ -340,16 +360,19 @@ class DetectionEngine(QObject):
         self._lockdown_active = True
         self._lockdown_key = device.key if device else ""
         self._failsafe.start()
-        if self.settings.lock_on_lockdown:
-            # Lock the screen — needs no special permission, and the injected
-            # keystrokes land harmlessly on the lock screen. Don't also freeze:
-            # the user needs the keyboard to type their password back in.
-            locked = self.responder.lock_screen()
-            note = "screen locked" if locked else "lock failed — see Settings"
+        # PRIMARY block: freeze ALL keyboard input so the payload literally can't
+        # type (needs Accessibility). The user clicks Approve with the mouse to
+        # unfreeze — so we DON'T also lock the screen when the freeze succeeds.
+        frozen = self.responder.engage_lockdown()
+        locked = False
+        if not frozen and self.settings.lock_on_lockdown:
+            locked = self.responder.lock_screen()  # fallback when freeze can't run
+        if frozen:
+            note = "keyboard FROZEN — click Approve to unlock"
+        elif locked:
+            note = "screen locked"
         else:
-            # Freeze all keyboard input (needs Accessibility).
-            frozen = self.responder.engage_lockdown()
-            note = "keyboard frozen" if frozen else "grant Accessibility to freeze"
+            note = "could NOT block — grant Accessibility (see Protection)"
         self.status_text.emit(f"🔒 LOCKDOWN — {reason} ({note})")
         self.lockdown_engaged.emit(device, reason)
 

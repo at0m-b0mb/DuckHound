@@ -198,8 +198,8 @@ class MainWindow(QWidget):
         elif key == "lock":
             s.lock_on_lockdown = True
             s.save()
-        elif key == "perm":
-            self.engine.request_access()
+        elif key in ("perm", "block"):
+            self.engine.request_access()  # prompts Input Monitoring + Accessibility
         elif key == "baseline":
             self.engine.trust_all_current()
         elif key == "autostart":

@@ -3,6 +3,25 @@
 All notable changes to DuckHound are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.1.2] — 2026-06-26
+
+### Fixed — real crash-free detection on macOS 26, and actual blocking
+- **macOS keyboard hook no longer crashes the app.** pynput decodes keycodes via Carbon
+  Text-Input-Source APIs on a background thread, which macOS 26 forbids — it hard-killed
+  the process (`_dispatch_assert_queue_fail` → `TSMGetInputSourceProperty`) the instant the
+  hook started after pressing Arm. Replaced it on macOS with a native `CGEventTap`
+  (`core/mac_input.py`) that records **timing only** (never decodes characters) and runs on
+  the main run loop. No Carbon, no background thread, no crash. pynput stays on Win/Linux.
+- **Lockdown now actually blocks.** It **freezes all keyboard input** first (a native
+  suppressing event tap) — the real block — instead of the unreliable screensaver lock, and
+  only falls back to screen-lock if the freeze can't run. Click Approve (mouse) to unfreeze;
+  30-second failsafe as before.
+- **Permissions split into detect vs block.** Detection needs only **Input Monitoring**;
+  blocking/freezing needs **Accessibility**. The two are now checked separately (so the app
+  no longer claims it's "blind" when only the blocking permission is missing), and the
+  **Protection score has a dedicated "Keystroke-blocking permission" item** with a one-click
+  Fix that prompts for Accessibility.
+
 ## [1.1.1] — 2026-06-26
 
 ### Fixed
@@ -129,6 +148,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - DuckHound measures keystroke **timing only**, never key content, and performs no
   network access or telemetry.
 
+[1.1.2]: https://github.com/at0m-b0mb/DuckHound/releases/tag/v1.1.2
 [1.1.1]: https://github.com/at0m-b0mb/DuckHound/releases/tag/v1.1.1
 [1.1.0]: https://github.com/at0m-b0mb/DuckHound/releases/tag/v1.1.0
 [1.0.5]: https://github.com/at0m-b0mb/DuckHound/releases/tag/v1.0.5

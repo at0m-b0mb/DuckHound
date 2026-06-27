@@ -93,20 +93,28 @@ class Responder:
             pass
         return False
 
+    def _make_suppressor(self):
+        """Start a global keyboard suppressor and return it (has ``.stop()``),
+        or None. Uses the native CGEventTap on macOS (pynput's suppressor decodes
+        keys via Carbon on a background thread and crashes on macOS 26)."""
+        try:
+            if sys.platform == "darwin":
+                from .mac_input import MacKeyTap
+                tap = MacKeyTap(on_press=lambda: None, suppress=True)
+                return tap if tap.start() else None
+            from pynput import keyboard
+            listener = keyboard.Listener(
+                on_press=lambda _k: None, on_release=lambda _k: None, suppress=True)
+            listener.start()
+            return listener
+        except Exception:
+            return None
+
     def start_block_window(self, duration_s: float = 2.0) -> bool:
         """Swallow ALL keyboard input for a brief window to neutralise the rest
-        of an injected payload. Best-effort: needs the same OS permission as the
-        detector, and intentionally short so a real user is barely affected."""
-        try:
-            from pynput import keyboard
-        except Exception:
-            return False
-        try:
-            listener = keyboard.Listener(
-                on_press=lambda _k: None, on_release=lambda _k: None,
-                suppress=True)
-            listener.start()
-        except Exception:
+        of an injected payload. Best-effort and intentionally short."""
+        listener = self._make_suppressor()
+        if listener is None:
             return False
         import threading
 
@@ -124,19 +132,8 @@ class Responder:
         permission as the detector; a real user navigates with the mouse."""
         if self._lock_listener is not None:
             return True
-        try:
-            from pynput import keyboard
-        except Exception:
-            return False
-        try:
-            self._lock_listener = keyboard.Listener(
-                on_press=lambda _k: None, on_release=lambda _k: None,
-                suppress=True)
-            self._lock_listener.start()
-            return True
-        except Exception:
-            self._lock_listener = None
-            return False
+        self._lock_listener = self._make_suppressor()
+        return self._lock_listener is not None
 
     def release_lockdown(self) -> None:
         if self._lock_listener is not None:
