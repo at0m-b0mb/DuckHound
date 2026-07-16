@@ -155,6 +155,8 @@ class MainWindow(QWidget):
         e.permission_status.connect(lambda *_: self._refresh_protection())
         e.lockdown_engaged.connect(self._on_lockdown_engaged)
         e.lockdown_released.connect(self._on_lockdown_released)
+        e.block_unavailable.connect(self._on_block_unavailable)
+        self._block_warned = False
         e.allowlist_changed.connect(self.devices.set_allowlist)
         e.allowlist_changed.connect(lambda *_: self._refresh_protection())
 
@@ -169,6 +171,7 @@ class MainWindow(QWidget):
         self.devices.rescan_requested.connect(e.enumerate_once)
         self.protection.fix_requested.connect(self._on_fix)
         self.protection.fix_all_requested.connect(self._on_fix_all)
+        self.protection.test_block_requested.connect(self._on_test_block)
         self.settings_page.settings_changed.connect(e.apply_settings)
         self.settings_page.settings_changed.connect(
             lambda *_: self._refresh_protection())
@@ -235,6 +238,25 @@ class MainWindow(QWidget):
     def _on_lockdown_released(self) -> None:
         self.lockdown_dialog.hide()
         self._lockdown_device = None
+
+    def _on_test_block(self) -> None:
+        if self.engine.test_block():
+            self.toast.popup(
+                "Blocking works ✓",
+                "Keyboard frozen for 4 seconds — try typing, nothing will appear. "
+                "This is exactly what happens to a Rubber Ducky.", "low")
+
+    def _on_block_unavailable(self) -> None:
+        """Detected an attack but couldn't freeze it — Accessibility is missing."""
+        self.toast.popup(
+            "Can't block — Accessibility needed",
+            "DuckHound detected an attack but can't freeze the keyboard. Grant "
+            "Accessibility to this app, then re-arm.", "critical")
+        self._navigate(P_PROTECT)
+        if not self._block_warned:
+            self._block_warned = True
+            from ..core import permissions
+            permissions.open_accessibility_settings()
 
     # -- priming -------------------------------------------------------- #
     def _prime(self) -> None:

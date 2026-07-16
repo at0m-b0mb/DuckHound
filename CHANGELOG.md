@@ -3,6 +3,28 @@
 All notable changes to DuckHound are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.1.3] — 2026-06-27
+
+### Fixed — the app was silently lying about blocking
+- **`lock_screen()` claimed success without ever locking.** It returned `True` just
+  because `open -a ScreenSaverEngine` ran as a *command* — the screensaver only locks if
+  "require password" is set, so on most machines **nothing was blocked while DuckHound
+  reported the attack as handled** and set lockdown active (suppressing further warnings).
+  It now verifies the real OS lock state (`CGSSessionScreenIsLocked`) and returns an honest
+  result.
+- **Freezing input is now the only thing that counts as a block.** If the freeze can't run
+  (no Accessibility) and the screen didn't verifiably lock, DuckHound no longer pretends:
+  it fires `block_unavailable` → a red toast, jumps to Protection, and opens the
+  Accessibility pane so the missing permission is impossible to miss.
+- **Suppression moved to a dedicated thread.** The blocking tap ran on the main thread,
+  where a busy GUI (modal dialog, rendering, subprocess) could let macOS disable the tap and
+  leak keystrokes. It now runs on its own CFRunLoop thread, so it blocks reliably.
+
+### Added
+- **"Test blocking" button** (Protection page) — freezes the keyboard for 4 seconds so you
+  can prove DuckHound really stops input, without needing a Rubber Ducky. If it can't
+  freeze, it tells you exactly why.
+
 ## [1.1.2] — 2026-06-26
 
 ### Fixed — real crash-free detection on macOS 26, and actual blocking
@@ -148,6 +170,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - DuckHound measures keystroke **timing only**, never key content, and performs no
   network access or telemetry.
 
+[1.1.3]: https://github.com/at0m-b0mb/DuckHound/releases/tag/v1.1.3
 [1.1.2]: https://github.com/at0m-b0mb/DuckHound/releases/tag/v1.1.2
 [1.1.1]: https://github.com/at0m-b0mb/DuckHound/releases/tag/v1.1.1
 [1.1.0]: https://github.com/at0m-b0mb/DuckHound/releases/tag/v1.1.0

@@ -25,6 +25,7 @@ _LEVEL_TEXT = {
 class ProtectionPage(QWidget):
     fix_requested = Signal(str)
     fix_all_requested = Signal()
+    test_block_requested = Signal()
 
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
@@ -57,12 +58,26 @@ class ProtectionPage(QWidget):
         self.fix_all.setMinimumHeight(40)
         self.fix_all.setIcon(icons.icon("check", "#051018", 18))
         self.fix_all.clicked.connect(self.fix_all_requested.emit)
+        self.test_btn = QPushButton("  Test blocking")
+        self.test_btn.setProperty("ghost", "true")
+        self.test_btn.setCursor(Qt.PointingHandCursor)
+        self.test_btn.setMinimumHeight(40)
+        self.test_btn.setToolTip(
+            "Freeze the keyboard for 4 seconds to prove DuckHound can stop an "
+            "attack. Try typing — nothing should appear.")
+        self.test_btn.setIcon(icons.icon("lock", COLORS["accent"], 16))
+        self.test_btn.clicked.connect(self.test_block_requested.emit)
+        btns = QHBoxLayout()
+        btns.setSpacing(9)
+        btns.addWidget(self.fix_all)
+        btns.addWidget(self.test_btn)
+        btns.addStretch(1)
         txt = QVBoxLayout()
         txt.setSpacing(5)
         txt.addStretch(1)
         txt.addWidget(self.level_lbl)
         txt.addWidget(self.level_sub)
-        txt.addWidget(self.fix_all, 0, Qt.AlignLeft)
+        txt.addLayout(btns)
         txt.addStretch(1)
         bl = QHBoxLayout(banner)
         bl.setContentsMargins(22, 18, 22, 18)

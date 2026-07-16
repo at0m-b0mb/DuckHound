@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import subprocess
 import sys
+import time
 
 from ..config import Settings
 
@@ -53,30 +54,53 @@ class Responder:
             pass
         return False
 
+    @staticmethod
+    def screen_is_locked() -> bool:
+        """Ground truth from the OS — did the screen ACTUALLY lock?"""
+        try:
+            from Quartz import CGSessionCopyCurrentDictionary
+            d = CGSessionCopyCurrentDictionary()
+            return bool(d and d.get("CGSSessionScreenIsLocked", 0))
+        except Exception:
+            return False
+
+    def _await_lock(self, seconds: float = 1.2) -> bool:
+        """Poll until the screen really locks. Never claim success blindly:
+        `open -a ScreenSaverEngine` succeeds as a *command* even when the screen
+        never locks (no "require password" set), which used to make DuckHound
+        report an attack as blocked when nothing had been stopped."""
+        deadline = time.monotonic() + seconds
+        while time.monotonic() < deadline:
+            if self.screen_is_locked():
+                return True
+            time.sleep(0.12)
+        return self.screen_is_locked()
+
     def lock_screen(self) -> bool:
         try:
             if sys.platform == "darwin":
-                # The classic CGSession path was removed in recent macOS, so try
-                # several no-entitlement methods in order of reliability.
-                # 1) Screensaver — locks instantly if "require password" is set.
+                if self.screen_is_locked():
+                    return True
+                # The classic CGSession path was removed in recent macOS. Try the
+                # screensaver (locks only if "require password" is set), then the
+                # Ctrl-Cmd-Q shortcut, VERIFYING after each.
                 try:
                     subprocess.run(["open", "-a", "ScreenSaverEngine"], timeout=5)
-                    return True
+                    if self._await_lock():
+                        return True
                 except Exception:
                     pass
-                # 2) Ctrl-Cmd-Q lock shortcut (needs Accessibility).
                 try:
                     subprocess.run([
                         "osascript", "-e",
                         'tell application "System Events" to keystroke "q" '
                         "using {control down, command down}",
                     ], timeout=5)
-                    return True
+                    if self._await_lock():
+                        return True
                 except Exception:
                     pass
-                # 3) Last resort: sleep the display.
-                subprocess.run(["pmset", "displaysleepnow"], timeout=5)
-                return True
+                return False  # honest: we could not lock
             if sys.platform.startswith("linux"):
                 for cmd in (["loginctl", "lock-session"],
                             ["xdg-screensaver", "lock"],

@@ -101,6 +101,19 @@ def open_privacy_settings() -> None:
         pass
 
 
+def open_accessibility_settings() -> None:
+    """Open the macOS Accessibility privacy pane (needed for blocking)."""
+    try:
+        if sys.platform == "darwin":
+            subprocess.Popen([
+                "open",
+                "x-apple.systempreferences:com.apple.preference.security"
+                "?Privacy_Accessibility",
+            ])
+    except Exception:
+        pass
+
+
 def host_app_hint() -> str:
     """Best guess at which app the user must grant access to."""
     if sys.platform != "darwin":

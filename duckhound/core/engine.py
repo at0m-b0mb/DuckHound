@@ -36,6 +36,7 @@ class DetectionEngine(QObject):
     permission_status = Signal(bool, str)    # (hook_can_see_keys, detail)
     lockdown_engaged = Signal(object, str)   # (Device|None, reason)
     lockdown_released = Signal()
+    block_unavailable = Signal()             # detected, but couldn't block (no Accessibility)
     allowlist_changed = Signal(list)         # list[(key, label)]
 
     def __init__(self, settings: Settings, demo: bool = False) -> None:
@@ -192,8 +193,9 @@ class DetectionEngine(QObject):
             self.status_text.emit(f"Keystroke hook blocked — grant Input Monitoring ({exc})")
 
     def _on_key_main(self) -> None:
-        """macOS tap callback — already on the GUI/main thread, so handle directly."""
-        self._handle_key(time.monotonic())
+        """macOS tap callback (runs on the tap's dedicated thread) — marshal the
+        press time to the GUI thread via the queued signal."""
+        self._keystroke.emit(time.monotonic())
 
     def _stop_keyboard_hook(self) -> None:
         if self._listener is not None:
@@ -357,9 +359,6 @@ class DetectionEngine(QObject):
     def _engage_lockdown(self, device: Device | None, reason: str) -> None:
         if self.demo or self._lockdown_active:
             return
-        self._lockdown_active = True
-        self._lockdown_key = device.key if device else ""
-        self._failsafe.start()
         # PRIMARY block: freeze ALL keyboard input so the payload literally can't
         # type (needs Accessibility). The user clicks Approve with the mouse to
         # unfreeze — so we DON'T also lock the screen when the freeze succeeds.
@@ -367,12 +366,17 @@ class DetectionEngine(QObject):
         locked = False
         if not frozen and self.settings.lock_on_lockdown:
             locked = self.responder.lock_screen()  # fallback when freeze can't run
-        if frozen:
-            note = "keyboard FROZEN — click Approve to unlock"
-        elif locked:
-            note = "screen locked"
-        else:
-            note = "could NOT block — grant Accessibility (see Protection)"
+        if not frozen and not locked:
+            # Couldn't actually stop anything — don't fake a "frozen" dialog.
+            # Shout about the missing permission and keep alerting each burst.
+            self.status_text.emit(
+                "⚠ Attack detected but NOT blocked — grant Accessibility to freeze input")
+            self.block_unavailable.emit()
+            return
+        self._lockdown_active = True
+        self._lockdown_key = device.key if device else ""
+        self._failsafe.start()
+        note = "keyboard FROZEN — click Approve to unlock" if frozen else "screen locked"
         self.status_text.emit(f"🔒 LOCKDOWN — {reason} ({note})")
         self.lockdown_engaged.emit(device, reason)
 
@@ -391,6 +395,29 @@ class DetectionEngine(QObject):
         self._failsafe.stop()
         self.status_text.emit("Lockdown lifted — keyboard restored")
         self.lockdown_released.emit()
+
+    def test_block(self, seconds: float = 4.0) -> bool:
+        """Prove blocking works: freeze the keyboard briefly, then auto-release.
+
+        Lets you verify DuckHound can actually STOP an attack without needing a
+        Rubber Ducky — if this can't freeze, neither can a real response.
+        """
+        if self._lockdown_active:
+            return True
+        if not self.responder.engage_lockdown():
+            self.status_text.emit(
+                "⚠ Blocking UNAVAILABLE — grant Accessibility, then relaunch")
+            self.block_unavailable.emit()
+            return False
+        self.status_text.emit(
+            f"🧊 TEST: keyboard frozen for {seconds:.0f}s — try typing, nothing "
+            "should appear")
+        QTimer.singleShot(int(seconds * 1000), self._end_test_block)
+        return True
+
+    def _end_test_block(self) -> None:
+        self.responder.release_lockdown()
+        self.status_text.emit("✓ Test done — blocking WORKS. Keyboard restored.")
 
     def trust_device(self, key: str, label: str = "") -> None:
         """Add a device to the persistent allow-list; it never triggers again."""
